@@ -8,6 +8,7 @@ const mongoUrl = process.env.NODE_ENV === 'production' ?
 
 
 const client = new MongoClient(mongoUrl);
+
 async function run() {
     try {
         await client.connect();
@@ -34,4 +35,23 @@ app.all('*', (req, res) => {
     res.status(404).end()
 })
 
-app.listen(80);
+const server = app.listen(80);
+
+process.on('SIGINT', () => {
+    server.close((error) => {
+        if (error) {
+            process.exit(1)
+        } else {
+            console.info('Node server closed')
+            if (client) {
+                client.close((error) => {
+                    process.exit(error ? 1 : 0)
+                })
+                console.info('Database closed')
+            } else {
+                process.exit(0)
+            }
+            console.info('All processes closed successfully')
+        }
+    })
+})
